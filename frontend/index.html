@@ -112,6 +112,13 @@
 
     <!-- Section Avis Clients -->
     <section id="avis" class="avis-section">
+        <div id="review-form">
+  <input type="text" id="name" placeholder="Votre nom">
+  <textarea id="comment" placeholder="Votre avis"></textarea>
+  <input type="number" id="rating" min="1" max="5">
+  <button onclick="submitReview(productId)">Envoyer</button>
+</div>
+
         <div class="container">
             <h2>💬 Ce que nos clients disent</h2>
             <div id="avis-container" class="avis-grid">
