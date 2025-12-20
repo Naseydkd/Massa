@@ -11,6 +11,7 @@ class Product(db.Model):
     price = db.Column(db.Float, nullable=False)
     image_url = db.Column(db.String(255), nullable=True)
     available = db.Column(db.Boolean, default=True)
+    stock = db.Column(db.Integer, default=0)  # Quantité en stock
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     order_items = db.relationship('OrderItem', backref='product', lazy=True)
@@ -23,5 +24,6 @@ class Product(db.Model):
             'description': self.description,
             'price': self.price,
             'image_url': self.image_url,
-            'available': self.available
+            'available': self.available,
+            'stock': self.stock
         }

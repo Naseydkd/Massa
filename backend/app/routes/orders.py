@@ -1,6 +1,8 @@
 from flask import Blueprint, jsonify, request
 from app import db
 from app.models import Order, OrderItem, Product
+from app.models.settings import Settings
+from app.utils.email_service import send_order_notification
 
 orders_bp = Blueprint('orders', __name__, url_prefix='/api/orders')
 
@@ -45,6 +47,18 @@ def create_order():
         db.session.add(order_item)
     
     db.session.commit()
+    
+    # Envoyer notification email si activée
+    try:
+        settings = Settings.query.first()
+        if settings and settings.notify_on_order and settings.notify_email:
+            send_order_notification(
+                order.id,
+                total_price,
+                settings.notify_email
+            )
+    except Exception as e:
+        print(f"⚠️ Erreur notification: {str(e)}")
     
     return jsonify(order.to_dict()), 201
 

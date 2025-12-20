@@ -650,4 +650,60 @@ function setupEventListeners() {
     } else {
         updateAuthUI();
     }
+
+    // Charger les avis clients
+    loadReviews();
 }
+
+// ===========================
+// AVIS CLIENTS / REVIEWS
+// ===========================
+
+async function loadReviews() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/reviews/`);
+        if (!response.ok) {
+            console.error('Erreur lors du chargement des avis');
+            return;
+        }
+        
+        const reviews = await response.json();
+        displayReviews(reviews);
+    } catch (error) {
+        console.error('Erreur lors de la récupération des avis:', error);
+    }
+}
+
+function displayReviews(reviews) {
+    const avisContainer = document.getElementById('avis-container');
+    
+    if (!avisContainer) return;
+    
+    if (!Array.isArray(reviews) || reviews.length === 0) {
+        avisContainer.innerHTML = '<p class="no-reviews">Soyez le premier à laisser un avis!</p>';
+        return;
+    }
+
+    // Afficher les 6 derniers avis
+    const recentReviews = reviews.slice(-6).reverse();
+    
+    const avisHtml = recentReviews.map(review => `
+        <div class="avis-card">
+            <div class="avis-header">
+                <div class="avis-rating">
+                    ${'⭐'.repeat(review.rating)}<span class="avis-rating-num">/${review.rating}</span>
+                </div>
+                <div class="avis-product">${review.product_name || 'Produit'}</div>
+            </div>
+            <div class="avis-comment">
+                "${review.comment || 'Pas de commentaire'}"
+            </div>
+            <div class="avis-user">
+                par ${review.user_email ? review.user_email.split('@')[0] : 'Anonyme'}
+            </div>
+        </div>
+    `).join('');
+    
+    avisContainer.innerHTML = avisHtml;
+}
+

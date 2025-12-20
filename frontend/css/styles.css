@@ -808,6 +808,120 @@ body {
     }
 }
 
+/* ===========================
+   SECTION AVIS CLIENTS
+   =========================== */
+
+.avis-section {
+    padding: 60px 0;
+    background-color: var(--light-gray);
+}
+
+.avis-section h2 {
+    text-align: center;
+    margin-bottom: 40px;
+    font-size: 32px;
+    color: var(--accent-color);
+}
+
+.avis-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.avis-card {
+    background-color: var(--primary-color);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(128, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    border-left: 4px solid var(--accent-color);
+}
+
+.avis-card:hover {
+    box-shadow: 0 4px 16px rgba(128, 0, 0, 0.2);
+    transform: translateY(-4px);
+}
+
+.avis-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+}
+
+.avis-rating {
+    font-size: 18px;
+    color: #ffc107;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.avis-rating-num {
+    font-size: 12px;
+    color: #999;
+    margin-left: 5px;
+}
+
+.avis-product {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent-color);
+    text-align: right;
+}
+
+.avis-comment {
+    font-style: italic;
+    color: var(--text-color);
+    margin-bottom: 15px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.avis-user {
+    font-size: 12px;
+    color: #999;
+    text-align: right;
+}
+
+.no-reviews {
+    text-align: center;
+    padding: 40px 20px;
+    color: #999;
+    font-style: italic;
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 600px) {
+    .avis-section h2 {
+        font-size: 24px;
+    }
+
+    .avis-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .avis-card {
+        padding: 15px;
+    }
+
+    .avis-header {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .avis-product {
+        text-align: left;
+    }
+
+    .avis-user {
+        text-align: left;
+    }
+}
+
 @media (max-width: 480px) {
     .navbar .container {
         flex-direction: column;

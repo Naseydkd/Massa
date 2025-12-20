@@ -40,7 +40,8 @@ def create_product():
         description=data.get('description'),
         price=data['price'],
         image_url=data.get('image_url'),
-        available=data.get('available', True)
+        available=data.get('available', True),
+        stock=data.get('stock', 0)
     )
     
     db.session.add(product)
@@ -64,6 +65,7 @@ def update_product(product_id):
     product.price = data.get('price', product.price)
     product.image_url = data.get('image_url', product.image_url)
     product.available = data.get('available', product.available)
+    product.stock = data.get('stock', product.stock)
     
     db.session.commit()
     

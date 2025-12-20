@@ -37,6 +37,5 @@ class User(db.Model):
             'address': self.address,
             'city': self.city,
             'postal_code': self.postal_code,
-            'is_admin': self.is_admin,
-            'check_password_hash' : self.password_hash
+            'is_admin': self.is_admin
         }

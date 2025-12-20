@@ -19,7 +19,6 @@ def create_app():
         f"{os.getenv('DB_HOST', 'localhost')}/"
         f"{os.getenv('DB_NAME', 'resto_donuts')}"
     )
-    app.config['DEV_MODE'] = True  # ⚠️ DEV SEULEMENT
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
     
@@ -30,10 +29,14 @@ def create_app():
     from app.routes.products import products_bp
     from app.routes.users import users_bp
     from app.routes.orders import orders_bp
+    from app.routes.reviews import reviews_bp
+    from app.routes.settings import settings_bp
     
     app.register_blueprint(products_bp)
     app.register_blueprint(users_bp)
     app.register_blueprint(orders_bp)
+    app.register_blueprint(reviews_bp)
+    app.register_blueprint(settings_bp)
     
     with app.app_context():
         db.create_all()

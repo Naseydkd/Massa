@@ -57,24 +57,11 @@ def login():
         'user': user.to_dict()
     }), 200
 
-
-@users_bp.route('/dev-admin-login', methods=['GET'])
-def dev_admin_login():
-    from flask import current_app
-
-    if not current_app.config.get('DEV_MODE'):
-        return {"error": "Accès interdit"}, 403
-
-    admin = User.query.filter_by(is_admin=True).first()
-
-    if not admin:
-        return {"error": "Admin non trouvé"}, 404
-
-    return jsonify({
-        "message": "Connexion admin DEV",
-        "user_id": admin.id,
-        "is_admin": True
-    })
+@users_bp.route('/', methods=['GET'])
+def get_users():
+    """Récupérer tous les utilisateurs (admin)"""
+    users = User.query.all()
+    return jsonify([u.to_dict() for u in users]), 200
 
 @users_bp.route('/<int:user_id>', methods=['GET'])
 def get_user(user_id):
