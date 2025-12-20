@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chez Hadjo - Vente en Ligne</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="navbar-brand">👩🏾‍🍳 Chez Hadjo's</div>
+            <button class="hamburger" id="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="navbar-menu" id="navbar-menu">
+                <a href="#accueil" class="nav-link">Accueil</a>
+                <a href="#catalogue" class="nav-link">Catalogue</a>
+                <a href="#" class="nav-link" id="btn-panier">Panier (<span id="cart-count">0</span>)</a>
+                <button id="btn-login" class="btn-login">Connexion</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="accueil" class="hero">
+        <div class="hero-content">
+            <h1>Bienvenue chez Hadjo BDN</h1>
+            <p>Les meilleurs BDN faits maison, livrés chez vous</p>
+            <button id="btn-commander" class="btn-primary">Commander maintenant</button>
+        </div>
+    </section>
+
+    <!-- Catalogue -->
+    <section id="catalogue" class="catalogue">
+        <div class="container">
+            <h2>Notre catalogue</h2>
+            
+            <!-- Filtres en Slide -->
+            <div class="filtres-slide">
+                <button class="slide-nav prev" id="slide-prev">❮</button>
+                <div class="filtres-container">
+                    <div class="filtres">
+                        <button class="filtre-btn active" data-category="all">Tous</button>
+                        <button class="filtre-btn" data-category="classique">Classiques</button>
+                        <button class="filtre-btn" data-category="gourmand">Gourmands</button>
+                        <button class="filtre-btn" data-category="sain">Sains</button>
+                        <button class="filtre-btn" data-category="special">Spéciaux</button>
+                    </div>
+                </div>
+                <button class="slide-nav next" id="slide-next">❯</button>
+            </div>
+
+            <!-- Grille de produits -->
+            <div id="products-grid" class="products-grid">
+                <!-- Rempli via JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Modal Panier -->
+    <div id="modal-panier" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Mon Panier</h2>
+            <div id="cart-items" class="cart-items">
+                <!-- Rempli via JavaScript -->
+            </div>
+            <div class="cart-summary">
+                <h3>Total: <span id="cart-total"></span> FCFA</h3>
+            </div>
+            <div class="cart-actions">
+                <button class="btn-secondary" id="btn-continue-shopping">Continuer les achats</button>
+                <button class="btn-primary" id="btn-checkout">Procéder au paiement</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Connexion -->
+    <div id="modal-login" class="modal">
+        <div class="modal-content modal-form">
+            <span class="close">&times;</span>
+            <h2>Connexion</h2>
+            <form id="form-login">
+                <input type="email" placeholder="Email" required>
+                <input type="password" placeholder="Mot de passe" required>
+                <button type="submit" class="btn-primary">Se connecter</button>
+            </form>
+            <p>Pas de compte ? <a href="#" id="btn-signup">S'inscrire</a></p>
+        </div>
+    </div>
+
+    <!-- Modal Inscription -->
+    <div id="modal-signup" class="modal">
+        <div class="modal-content modal-form">
+            <span class="close">&times;</span>
+            <h2>Inscription</h2>
+            <form id="form-signup">
+                <input type="email" placeholder="Email" required>
+                <input type="text" placeholder="Nom d'utilisateur" required>
+                <input type="password" placeholder="Mot de passe" required>
+                <input type="text" placeholder="Prénom (optionnel)">
+                <input type="text" placeholder="Nom (optionnel)">
+                <input type="tel" placeholder="Téléphone (optionnel)">
+                <button type="submit" class="btn-primary">S'inscrire</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Checkout -->
+    <div id="modal-checkout" class="modal">
+        <div class="modal-content modal-form">
+            <span class="close">&times;</span>
+            <h2>Finaliser la commande</h2>
+            <form id="form-checkout">
+                <h3>Adresse de livraison</h3>
+                <input type="text" id="address" placeholder="Adresse" required>
+                <input type="text" id="city" placeholder="Ville" required>
+                <input type="tel" id="phone" placeholder="Numéro de téléphone" required>
+
+                <h3>Options de livraison</h3>
+                <label>
+                    <input type="radio" name="delivery_type" value="delivery" checked> Livraison à domicile
+                </label>
+                <label>
+                    <input type="radio" name="delivery_type" value="pickup"> Retrait en magasin
+                </label>
+
+                <h3>Paiement</h3>
+                <label>
+                    <input type="radio" name="payment_method" value="mynita" checked> MyNita
+                </label>
+                <label>
+                    <input type="radio" name="payment_method" value="cash"> Paiement à la livraison
+                </label>
+
+                <textarea id="notes" placeholder="Notes de commande (optionnel)" rows="3"></textarea>
+
+                <button type="submit" class="btn-primary">Confirmer la commande</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Détails Produit -->
+    <div id="modal-product" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="product-details" class="product-details">
+                <!-- Rempli via JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

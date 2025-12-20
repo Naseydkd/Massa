@@ -1,0 +1,90 @@
+from flask import Blueprint, jsonify, request
+from app import db
+from app.models import Order, OrderItem, Product
+
+orders_bp = Blueprint('orders', __name__, url_prefix='/api/orders')
+
+@orders_bp.route('/', methods=['POST'])
+def create_order():
+    """Créer une nouvelle commande"""
+    data = request.get_json()
+    
+    if not all(k in data for k in ['user_id', 'items', 'delivery_type', 'payment_method']):
+        return jsonify({'error': 'Champs requis manquants'}), 400
+    
+    # Calculer le total
+    total_price = 0
+    items_list = []
+    
+    for item in data['items']:
+        product = Product.query.get(item['product_id'])
+        if not product:
+            return jsonify({'error': f"Produit {item['product_id']} non trouvé"}), 404
+        
+        total_price += product.price * item['quantity']
+        items_list.append((product, item['quantity'], product.price))
+    
+    order = Order(
+        user_id=data['user_id'],
+        total_price=total_price,
+        delivery_type=data['delivery_type'],
+        payment_method=data['payment_method'],
+        notes=data.get('notes')
+    )
+    
+    db.session.add(order)
+    db.session.flush()
+    
+    for product, quantity, price in items_list:
+        order_item = OrderItem(
+            order_id=order.id,
+            product_id=product.id,
+            quantity=quantity,
+            unit_price=price
+        )
+        db.session.add(order_item)
+    
+    db.session.commit()
+    
+    return jsonify(order.to_dict()), 201
+
+@orders_bp.route('/user/<int:user_id>', methods=['GET'])
+def get_user_orders(user_id):
+    """Récupérer toutes les commandes d'un utilisateur"""
+    orders = Order.query.filter_by(user_id=user_id).all()
+    
+    return jsonify([o.to_dict() for o in orders]), 200
+
+@orders_bp.route('/<int:order_id>', methods=['GET'])
+def get_order(order_id):
+    """Récupérer une commande"""
+    order = Order.query.get(order_id)
+    
+    if not order:
+        return jsonify({'error': 'Commande non trouvée'}), 404
+    
+    return jsonify(order.to_dict()), 200
+
+@orders_bp.route('/<int:order_id>', methods=['PUT'])
+def update_order(order_id):
+    """Mettre à jour le statut d'une commande"""
+    order = Order.query.get(order_id)
+    
+    if not order:
+        return jsonify({'error': 'Commande non trouvée'}), 404
+    
+    data = request.get_json()
+    
+    order.status = data.get('status', order.status)
+    order.notes = data.get('notes', order.notes)
+    
+    db.session.commit()
+    
+    return jsonify(order.to_dict()), 200
+
+@orders_bp.route('/', methods=['GET'])
+def get_all_orders():
+    """Récupérer toutes les commandes (admin)"""
+    orders = Order.query.all()
+    
+    return jsonify([o.to_dict() for o in orders]), 200
