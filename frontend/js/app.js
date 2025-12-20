@@ -92,11 +92,34 @@ function generateToppingHTML(topping) {
 async function loadProducts() {
     try {
         const response = await fetch(`${API_BASE_URL}/products/`);
+        if (!response.ok) throw new Error('API Error');
+        
         const data = await response.json();
-        allProducts = data.length > 0 ? data : DEMO_PRODUCTS;
+        
+        // Si l'API retourne des produits, les utiliser
+        if (Array.isArray(data) && data.length > 0) {
+            // Enrichir les produits API avec les données de démo (couleurs, etc.)
+            allProducts = data.map(product => {
+                const demoProduct = DEMO_PRODUCTS.find(p => p.id === product.id);
+                return {
+                    ...product,
+                    color: demoProduct?.color || '#800000',
+                    topping: demoProduct?.topping || 'default',
+                    image: demoProduct?.image || 'images/bouledn.png'
+                };
+            });
+        } else {
+            // Fallback aux produits démo si BD vide
+            allProducts = DEMO_PRODUCTS;
+        }
+        
         displayProducts(allProducts);
     } catch (error) {
-        console.warn('API indisponible, utilisation des produits démo');
+        console.warn('❌ API indisponible ou erreur réseau');
+        console.warn('Détails erreur:', error.message);
+        console.warn('Utilisation des produits démo en mode local');
+        
+        // Utiliser les DEMO_PRODUCTS comme fallback
         allProducts = DEMO_PRODUCTS;
         displayProducts(allProducts);
     }
