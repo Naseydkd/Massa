@@ -21,6 +21,7 @@ def create_app():
     )
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
+    app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB max
     
 
     db.init_app(app)
@@ -31,12 +32,14 @@ def create_app():
     from app.routes.orders import orders_bp
     from app.routes.reviews import reviews_bp
     from app.routes.settings import settings_bp
+    from app.routes.categories import categories_bp
     
     app.register_blueprint(products_bp)
     app.register_blueprint(users_bp)
     app.register_blueprint(orders_bp)
     app.register_blueprint(reviews_bp)
     app.register_blueprint(settings_bp)
+    app.register_blueprint(categories_bp)
     
     with app.app_context():
         db.create_all()

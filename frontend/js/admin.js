@@ -4,6 +4,7 @@ let currentAdmin = null;
 let allOrders = [];
 let allProducts = [];
 let allUsers = [];
+let allCategories = [];
 
 // ===========================
 // INITIALISATION
@@ -71,16 +72,16 @@ function updateDashboard() {
     document.getElementById('stat-products').textContent = allProducts.length;
 
     // Revenu total
-    const totalRevenue = allOrders.reduce((sum, order) => sum + (order.total_amount || 0), 0);
+    const totalRevenue = allOrders.reduce((sum, order) => sum + (order.total_price || 0), 0);
     document.getElementById('stat-revenue').textContent = totalRevenue.toFixed(0) + ' FCFA';
-
+    
     // Dernières commandes
     const recentOrders = allOrders.slice(-5).reverse();
     const recentOrdersHtml = recentOrders.map(order => `
         <div class="list-item">
             <div class="list-item-title">Commande #${order.id}</div>
             <div class="list-item-info">
-                Client: ${order.user_id} | Total: ${order.total_amount || 0} FCFA | Statut: ${order.status}
+                Client: ${order.user_id} | Total: ${order.total_price || 0} FCFA | Statut: ${order.status}
             </div>
         </div>
     `).join('');
@@ -136,7 +137,7 @@ function displayOrders(filteredOrders = null) {
                     <tr>
                         <td>#${order.id}</td>
                         <td>${order.user_id}</td>
-                        <td>${order.total_amount || 0} FCFA</td>
+                        <td>${order.total_price || 0} FCFA</td>
                         <td><span class="status-badge status-${order.status || 'pending'}">${order.status || 'En attente'}</span></td>
                         <td>${new Date(order.created_at).toLocaleDateString('fr-FR')}</td>
                         <td>
@@ -156,10 +157,52 @@ function displayOrders(filteredOrders = null) {
 // ===========================
 
 function displayProducts() {
+    // Filtres et tri
+    const filterCategory = document.getElementById('filter-category')?.value || '';
+    const sortBy = document.getElementById('sort-products')?.value || 'name';
+    
+    let filtered = allProducts;
+    
+    // Filtrer par catégorie
+    if (filterCategory) {
+        filtered = filtered.filter(p => p.category === filterCategory);
+    }
+    
+    // Trier
+    const sorted = [...filtered].sort((a, b) => {
+        if (sortBy === 'name') return a.name.localeCompare(b.name);
+        if (sortBy === 'price-asc') return a.price - b.price;
+        if (sortBy === 'price-desc') return b.price - a.price;
+        if (sortBy === 'stock') return (b.stock || 0) - (a.stock || 0);
+        if (sortBy === 'category') return a.category.localeCompare(b.category);
+        return 0;
+    });
+    
     const tableHtml = `
+        <div style="margin-bottom: 15px; display: flex; gap: 10px; align-items: center;">
+            <select id="filter-category" style="padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+                <option value="">📁 Toutes les catégories</option>
+                <option value="classique">Classique</option>
+                <option value="gourmand">Gourmand</option>
+                <option value="sain">Sain</option>
+                <option value="special">Spécial</option>
+            </select>
+            
+            <select id="sort-products" style="padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+                <option value="name">📝 Trier par Nom</option>
+                <option value="price-asc">💰 Prix (↑)</option>
+                <option value="price-desc">💰 Prix (↓)</option>
+                <option value="stock">📦 Stock</option>
+                <option value="category">📁 Catégorie</option>
+            </select>
+            
+            <button id="btn-delete-selected" class="btn-delete" style="display: none; padding: 8px 12px;">🗑️ Supprimer sélection</button>
+        </div>
+        
         <table>
             <thead>
                 <tr>
+                    <th style="width: 40px;"><input type="checkbox" id="select-all-products" title="Tout sélectionner"></th>
                     <th>ID</th>
                     <th>Nom</th>
                     <th>Catégorie</th>
@@ -170,8 +213,9 @@ function displayProducts() {
                 </tr>
             </thead>
             <tbody>
-                ${allProducts.map(product => `
-                    <tr>
+                ${sorted.map(product => `
+                    <tr class="product-row">
+                        <td style="text-align: center;"><input type="checkbox" class="product-checkbox" data-product-id="${product.id}"></td>
                         <td>#${product.id}</td>
                         <td>${product.name}</td>
                         <td>${product.category}</td>
@@ -188,6 +232,47 @@ function displayProducts() {
         </table>
     `;
     document.getElementById('products-table').innerHTML = tableHtml;
+    
+    // Ajouter les listeners après rendu
+    document.getElementById('filter-category').addEventListener('change', displayProducts);
+    document.getElementById('sort-products').addEventListener('change', displayProducts);
+    
+    document.getElementById('select-all-products').addEventListener('change', (e) => {
+        document.querySelectorAll('.product-checkbox').forEach(cb => cb.checked = e.target.checked);
+        updateDeleteButton();
+    });
+    
+    document.querySelectorAll('.product-checkbox').forEach(cb => {
+        cb.addEventListener('change', updateDeleteButton);
+    });
+    
+    document.getElementById('btn-delete-selected').addEventListener('click', deleteSelectedProducts);
+}
+
+function updateDeleteButton() {
+    const selected = document.querySelectorAll('.product-checkbox:checked').length;
+    const btn = document.getElementById('btn-delete-selected');
+    btn.style.display = selected > 0 ? 'block' : 'none';
+    if (selected > 0) btn.textContent = `🗑️ Supprimer ${selected} produit(s)`;
+}
+
+async function deleteSelectedProducts() {
+    const selected = document.querySelectorAll('.product-checkbox:checked');
+    if (selected.length === 0) return;
+    
+    if (!confirm(`Supprimer ${selected.length} produit(s)?`)) return;
+    
+    for (const checkbox of selected) {
+        const productId = checkbox.dataset.productId;
+        try {
+            await fetch(`${API_BASE_URL}/products/${productId}`, { method: 'DELETE' });
+        } catch (e) {
+            console.error('Erreur suppression:', e);
+        }
+    }
+    
+    showNotification(`${selected.length} produit(s) supprimé(s)`, 'success');
+    loadDashboardData();
 }
 
 // ===========================
@@ -237,7 +322,18 @@ function editProduct(productId) {
     document.getElementById('product-stock').value = product.stock || 0;
     document.getElementById('product-description').value = product.description || '';
     document.getElementById('product-image').value = product.image_url || '';
+    document.getElementById('product-image-file').value = '';
     document.getElementById('product-available').checked = product.available;
+    
+    // Afficher l'aperçu de l'image existante
+    const preview = document.getElementById('preview-img');
+    if (product.image_url) {
+        preview.src = product.image_url;
+        preview.style.display = 'block';
+    } else {
+        preview.style.display = 'none';
+    }
+    
     document.getElementById('modal-title').textContent = 'Éditer le produit';
 
     openModal('modal-product');
@@ -282,7 +378,7 @@ function editOrder(orderId) {
             <strong>Client:</strong> <span>ID ${order.user_id}</span>
         </div>
         <div class="order-detail-row">
-            <strong>Montant:</strong> <span>${order.total_amount || 0} FCFA</span>
+            <strong>Montant:</strong> <span>${order.total_price || 0} FCFA</span>
         </div>
         <div class="order-detail-row">
             <strong>Type de livraison:</strong> <span>${order.delivery_type || 'Non spécifié'}</span>
@@ -317,6 +413,74 @@ async function deleteOrder(orderId) {
 }
 
 // ===========================
+// GESTION DES IMAGES
+// ===========================
+
+function handleImageUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Vérifier la taille (max 500KB)
+    const maxSize = 500 * 1024; // 500KB
+    if (file.size > maxSize) {
+        showNotification('Image trop volumineuse (max 500KB)', 'error');
+        return;
+    }
+
+    // Afficher aperçu
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const preview = document.getElementById('preview-img');
+        preview.src = e.target.result;
+        preview.style.display = 'block';
+        
+        // Stocker l'URL en base64 dans le champ image
+        document.getElementById('product-image').value = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+// ===========================
+// EVENT LISTENERS
+// ===========================
+
+// ===========================
+// GESTION DE LA NAVIGATION
+// ===========================
+
+function setupNavigation() {
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.preventDefault();
+
+            // Retirer la classe active
+            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+
+            // Ajouter la classe active
+            item.classList.add('active');
+            const sectionId = item.getAttribute('data-section');
+            document.getElementById(sectionId).classList.add('active');
+
+            // Mettre à jour le titre
+            const titles = {
+                dashboard: 'Tableau de bord',
+                orders: 'Gestion des Commandes',
+                products: 'Gestion des Produits',
+                categories: 'Gestion des Catégories',
+                users: 'Gestion des Utilisateurs'
+            };
+            document.getElementById('page-title').textContent = titles[sectionId];
+            
+            // Charger les données appropriées
+            if (sectionId === 'categories') {
+                loadCategories();
+            }
+        });
+    });
+}
+
+// ===========================
 // EVENT LISTENERS
 // ===========================
 
@@ -325,8 +489,29 @@ function setupEventListeners() {
     document.getElementById('btn-add-product').addEventListener('click', () => {
         document.getElementById('product-id').value = '';
         document.getElementById('form-product').reset();
+        document.getElementById('product-image-file').value = '';
+        document.getElementById('preview-img').style.display = 'none';
         document.getElementById('modal-title').textContent = 'Ajouter un produit';
         openModal('modal-product');
+    });
+
+    // Upload d'image
+    document.getElementById('btn-upload-image').addEventListener('click', () => {
+        document.getElementById('product-image-file').click();
+    });
+
+    document.getElementById('product-image-file').addEventListener('change', handleImageUpload);
+    
+    // Aperçu URL image
+    document.getElementById('product-image').addEventListener('change', (e) => {
+        if (e.target.value) {
+            const preview = document.getElementById('preview-img');
+            preview.src = e.target.value;
+            preview.style.display = 'block';
+            preview.onerror = () => {
+                preview.style.display = 'none';
+            };
+        }
     });
 
     // Formulaire produit
@@ -343,6 +528,15 @@ function setupEventListeners() {
         loadDashboardData();
         showNotification('Stock actualisé ✅', 'success');
     });
+
+    // Bouton actualiser avis
+    const btnRefreshReviews = document.getElementById('btn-refresh-reviews');
+    if (btnRefreshReviews) {
+        btnRefreshReviews.addEventListener('click', () => {
+            displayReviews();
+            showNotification('Avis actualisés ✅', 'success');
+        });
+    }
 
     // Filtre statut
     document.getElementById('filter-status').addEventListener('change', (e) => {
@@ -372,13 +566,21 @@ async function submitProduct(e) {
     e.preventDefault();
 
     const productId = document.getElementById('product-id').value;
+    const imageUrl = document.getElementById('product-image').value;
+    
+    // Vérifier la taille de l'image
+    if (imageUrl && imageUrl.startsWith('data:') && imageUrl.length > 1000000) {
+        showNotification('Image trop volumineuse. Utilise une URL ou une petite image', 'error');
+        return;
+    }
+
     const data = {
         name: document.getElementById('product-name').value,
         category: document.getElementById('product-category').value,
         price: parseFloat(document.getElementById('product-price').value),
         stock: parseInt(document.getElementById('product-stock').value) || 0,
         description: document.getElementById('product-description').value,
-        image_url: document.getElementById('product-image').value,
+        image_url: imageUrl,
         available: document.getElementById('product-available').checked
     };
 
@@ -397,11 +599,12 @@ async function submitProduct(e) {
             closeModal('modal-product');
             loadDashboardData();
         } else {
-            showNotification('Erreur lors de la sauvegarde', 'error');
+            const error = await response.json();
+            showNotification(`Erreur: ${error.error || 'Erreur lors de la sauvegarde'}`, 'error');
         }
     } catch (error) {
         console.error('Erreur:', error);
-        showNotification('Erreur lors de la sauvegarde', 'error');
+        showNotification(`Erreur: ${error.message}`, 'error');
     }
 }
 
@@ -435,32 +638,81 @@ async function submitOrder(e) {
 // NAVIGATION
 // ===========================
 
-function setupNavigation() {
-    document.querySelectorAll('.nav-item').forEach(item => {
-        item.addEventListener('click', (e) => {
-            e.preventDefault();
+// ===========================
+// GESTION DES CATÉGORIES
+// ===========================
 
-            // Retirer la classe active
-            document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
-
-            // Ajouter la classe active
-            item.classList.add('active');
-            const sectionId = item.getAttribute('data-section');
-            document.getElementById(sectionId).classList.add('active');
-
-            // Mettre à jour le titre
-            const titles = {
-                dashboard: 'Tableau de bord',
-                orders: 'Gestion des Commandes',
-                products: 'Gestion des Produits',
-                users: 'Gestion des Utilisateurs'
-            };
-            document.getElementById('page-title').textContent = titles[sectionId];
-        });
-    });
+async function loadCategories() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/categories/`);
+        const categories = await response.json();
+        displayCategories(categories);
+    } catch (error) {
+        console.error('Erreur:', error);
+        showNotification('Erreur lors du chargement des catégories', 'error');
+    }
 }
 
+function displayCategories(categories) {
+    const sorted = [...categories].sort((a, b) => a.display_order - b.display_order);
+    
+    const tableHtml = `
+        <table>
+            <thead>
+                <tr>
+                    <th>Catégorie</th>
+                    <th>Ordre d'affichage</th>
+                    <th>Visible</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${sorted.map(cat => `
+                    <tr>
+                        <td><strong>${cat.name.charAt(0).toUpperCase() + cat.name.slice(1)}</strong></td>
+                        <td>
+                            <input type="number" data-cat-id="${cat.id}" class="cat-order" value="${cat.display_order}" min="1" style="width: 80px; padding: 6px; border: 1px solid #ddd; border-radius: 4px;">
+                        </td>
+                        <td>
+                            <input type="checkbox" data-cat-id="${cat.id}" class="cat-visible" ${cat.is_visible ? 'checked' : ''}>
+                        </td>
+                        <td>
+                            <button class="btn-sm btn-save" onclick="saveCategory(${cat.id})">Enregistrer</button>
+                        </td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+    
+    document.getElementById('categories-table').innerHTML = tableHtml;
+}
+
+async function saveCategory(categoryId) {
+    const orderInput = document.querySelector(`.cat-order[data-cat-id="${categoryId}"]`);
+    const visibleInput = document.querySelector(`.cat-visible[data-cat-id="${categoryId}"]`);
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/categories/${categoryId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                display_order: parseInt(orderInput.value),
+                is_visible: visibleInput.checked
+            })
+        });
+        
+        if (response.ok) {
+            showNotification('Catégorie mise à jour ✅', 'success');
+            loadCategories();
+        } else {
+            showNotification('Erreur lors de la mise à jour', 'error');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        showNotification('Erreur lors de la mise à jour', 'error');
+    }
+}
 // ===========================
 // MODALES
 // ===========================
@@ -605,7 +857,7 @@ function createSalesChart() {
                 const orderDate = order.created_at ? order.created_at.split('T')[0] : '';
                 return orderDate === dateStr;
             })
-            .reduce((sum, order) => sum + (order.total_amount || 0), 0);
+            .reduce((sum, order) => sum + (order.total_price || 0), 0);
         
         revenues.push(dayRevenue);
     }
@@ -730,48 +982,70 @@ async function displayReviews() {
         
         const reviews = await response.json();
         
-        if (!Array.isArray(reviews) || reviews.length === 0) {
-            document.getElementById('reviews-table').innerHTML = '<p class="no-data">Aucun avis client pour le moment.</p>';
-            return;
+        // Remplir la section "Avis Récents" du dashboard
+        if (document.getElementById('recent-reviews')) {
+            if (!Array.isArray(reviews) || reviews.length === 0) {
+                document.getElementById('recent-reviews').innerHTML = '<p class="no-data">Aucun avis pour le moment.</p>';
+            } else {
+                const recentReviewsHtml = reviews.slice(-5).reverse().map(review => `
+                    <div class="list-item">
+                        <div class="list-item-title">${review.product_name || 'Produit'}</div>
+                        <div class="list-item-info">
+                            ${'⭐'.repeat(review.rating)} - "${review.comment || 'Pas de commentaire'}" par ${review.user_email ? review.user_email.split('@')[0] : 'Client'}
+                        </div>
+                    </div>
+                `).join('');
+                document.getElementById('recent-reviews').innerHTML = recentReviewsHtml;
+            }
         }
-
-        const reviewsHtml = `
-            <table>
-                <thead>
-                    <tr>
-                        <th>Produit</th>
-                        <th>Client</th>
-                        <th>Évaluation</th>
-                        <th>Commentaire</th>
-                        <th>Date</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${reviews.map(review => `
-                        <tr>
-                            <td>${review.product_name || 'Produit inconnu'}</td>
-                            <td>${review.user_email || review.user_id}</td>
-                            <td>
-                                <span class="rating">
-                                    ${'⭐'.repeat(review.rating)}<span class="rating-count">(${review.rating}/5)</span>
-                                </span>
-                            </td>
-                            <td class="comment-cell">${review.comment || '-'}</td>
-                            <td>${new Date(review.created_at).toLocaleDateString('fr-FR')}</td>
-                            <td>
-                                <button class="btn-small btn-danger" onclick="deleteReview(${review.id})">Supprimer</button>
-                            </td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        `;
         
-        document.getElementById('reviews-table').innerHTML = reviewsHtml;
+        // Remplir la table des avis (page Avis Clients)
+        if (document.getElementById('reviews-table')) {
+            if (!Array.isArray(reviews) || reviews.length === 0) {
+                document.getElementById('reviews-table').innerHTML = '<p class="no-data">Aucun avis client pour le moment.</p>';
+                return;
+            }
+
+            const reviewsHtml = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Produit</th>
+                            <th>Client</th>
+                            <th>Évaluation</th>
+                            <th>Commentaire</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${reviews.map(review => `
+                            <tr>
+                                <td>${review.product_name || 'Produit inconnu'}</td>
+                                <td>${review.user_email || review.user_id}</td>
+                                <td>
+                                    <span class="rating">
+                                        ${'⭐'.repeat(review.rating)}<span class="rating-count">(${review.rating}/5)</span>
+                                    </span>
+                                </td>
+                                <td class="comment-cell">${review.comment || '-'}</td>
+                                <td>${new Date(review.created_at).toLocaleDateString('fr-FR')}</td>
+                                <td>
+                                    <button class="btn-small btn-danger" onclick="deleteReview(${review.id})">Supprimer</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            document.getElementById('reviews-table').innerHTML = reviewsHtml;
+        }
     } catch (error) {
         console.error('Erreur lors de l\'affichage des avis:', error);
-        document.getElementById('reviews-table').innerHTML = '<p class="error">Erreur lors du chargement des avis</p>';
+        if (document.getElementById('reviews-table')) {
+            document.getElementById('reviews-table').innerHTML = '<p class="error">Erreur lors du chargement des avis</p>';
+        }
     }
 }
 
@@ -826,4 +1100,125 @@ function showNotification(message, type = 'info') {
     document.body.appendChild(notification);
 
     setTimeout(() => notification.remove(), 3000);
+}
+
+// ===========================
+// GESTION DES CATÉGORIES
+// ===========================
+
+async function loadCategories() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/categories/`);
+        if (response.ok) {
+            allCategories = await response.json();
+            displayCategories();
+        }
+    } catch (error) {
+        console.error('Erreur lors du chargement des catégories:', error);
+    }
+}
+
+function displayCategories() {
+    const tableHtml = `
+        <button id="btn-add-category" class="btn-primary" style="margin-bottom: 15px;">+ Ajouter une catégorie</button>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Catégorie</th>
+                    <th>Ordre d'affichage</th>
+                    <th>Visible</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${allCategories.map(category => `
+                    <tr>
+                        <td><strong>${category.name.charAt(0).toUpperCase() + category.name.slice(1)}</strong></td>
+                        <td>
+                            <input type="number" value="${category.display_order}" min="1" max="99" class="category-order" data-category-id="${category.id}" style="width: 60px; padding: 5px;">
+                        </td>
+                        <td>
+                            <input type="checkbox" class="category-visible" data-category-id="${category.id}" ${category.is_visible ? 'checked' : ''} style="width: 20px; height: 20px; cursor: pointer;">
+                        </td>
+                        <td>
+                            <button class="btn-sm btn-primary" onclick="saveCategory(${category.id})">Enregistrer</button>
+                        </td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
+    document.getElementById('categories-table').innerHTML = tableHtml;
+    
+    // Ajouter le listener pour créer une catégorie
+    document.getElementById('btn-add-category').addEventListener('click', showAddCategoryDialog);
+    
+    // Ajouter les listeners
+    document.querySelectorAll('.category-order, .category-visible').forEach(input => {
+        input.addEventListener('change', function() {
+            const categoryId = this.dataset.categoryId;
+            saveCategory(categoryId);
+        });
+    });
+}
+
+async function saveCategory(categoryId) {
+    const orderInput = document.querySelector(`input.category-order[data-category-id="${categoryId}"]`);
+    const visibleInput = document.querySelector(`input.category-visible[data-category-id="${categoryId}"]`);
+    
+    const data = {
+        display_order: parseInt(orderInput.value),
+        is_visible: visibleInput.checked
+    };
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/categories/${categoryId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        if (response.ok) {
+            showNotification('Catégorie mise à jour ✅', 'success');
+            loadCategories();
+        } else {
+            showNotification('Erreur lors de la mise à jour', 'error');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        showNotification('Erreur lors de la mise à jour', 'error');
+    }
+}
+
+function showAddCategoryDialog() {
+    const name = prompt('Nom de la nouvelle catégorie:');
+    if (!name) return;
+    
+    createCategory(name);
+}
+
+async function createCategory(name) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/categories/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: name.toLowerCase().trim(),
+                display_order: allCategories.length + 1,
+                is_visible: true
+            })
+        });
+        
+        if (response.ok) {
+            showNotification(`Catégorie "${name}" créée ✅`, 'success');
+            loadCategories();
+        } else {
+            const error = await response.json();
+            showNotification(`Erreur: ${error.error || 'Erreur lors de la création'}`, 'error');
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        showNotification('Erreur lors de la création', 'error');
+    }
 }

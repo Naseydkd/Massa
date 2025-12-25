@@ -102,3 +102,17 @@ def get_all_orders():
     orders = Order.query.all()
     
     return jsonify([o.to_dict() for o in orders]), 200
+
+@orders_bp.route('/<int:order_id>', methods=['DELETE'])
+def delete_order(order_id):
+    """Supprimer une commande"""
+    order = Order.query.get(order_id)
+    
+    if not order:
+        return jsonify({'error': 'Commande non trouvée'}), 404
+    
+    db.session.delete(order)
+    db.session.commit()
+    
+    return jsonify({'message': 'Commande supprimée'}), 200
+

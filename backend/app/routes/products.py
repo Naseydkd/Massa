@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 from app import db
-from app.models import Product
+from app.models import Product, OrderItem
 
 products_bp = Blueprint('products', __name__, url_prefix='/api/products')
 
@@ -79,7 +79,50 @@ def delete_product(product_id):
     if not product:
         return jsonify({'error': 'Produit non trouvé'}), 404
     
-    db.session.delete(product)
+    try:
+        # Supprimer d'abord les OrderItems associés
+        OrderItem.query.filter_by(product_id=product_id).delete()
+        
+        # Puis supprimer le produit
+        db.session.delete(product)
+        db.session.commit()
+        
+        return jsonify({'message': 'Produit supprimé'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Erreur lors de la suppression: {str(e)}'}), 500
+@products_bp.route('/<int:product_id>/display-order', methods=['PUT'])
+def update_display_order(product_id):
+    """Mettre à jour l'ordre d'affichage d'un produit"""
+    product = Product.query.get(product_id)
+    
+    if not product:
+        return jsonify({'error': 'Produit non trouvé'}), 404
+    
+    data = request.get_json()
+    
+    if 'display_order' in data:
+        product.display_order = data['display_order']
+    if 'is_featured' in data:
+        product.is_featured = data['is_featured']
+    
     db.session.commit()
     
-    return jsonify({'message': 'Produit supprimé'}), 200
+    return jsonify(product.to_dict()), 200
+
+@products_bp.route('/reorder', methods=['POST'])
+def reorder_products():
+    """Réorganiser tous les produits à la fois"""
+    data = request.get_json()  # [{id: 1, display_order: 1}, ...]
+    
+    try:
+        for item in data:
+            product = Product.query.get(item['id'])
+            if product:
+                product.display_order = item.get('display_order', 999)
+        
+        db.session.commit()
+        return jsonify({'message': 'Ordre mis à jour'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500

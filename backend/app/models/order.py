@@ -19,7 +19,8 @@ class Order(db.Model):
         return {
             'id': self.id,
             'user_id': self.user_id,
-            'order_date': self.order_date.isoformat(),
+            'order_date': self.order_date.isoformat() if self.order_date else None,
+            'created_at': self.order_date.isoformat() if self.order_date else None,
             'status': self.status,
             'total_price': self.total_price,
             'delivery_type': self.delivery_type,

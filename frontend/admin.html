@@ -24,6 +24,9 @@
             <a href="#products" class="nav-item" data-section="products">
                 <span class="icon">🍩</span> Produits
             </a>
+            <a href="#categories" class="nav-item" data-section="categories">
+                <span class="icon">📂</span> Catégories
+            </a>
             <a href="#stock" class="nav-item" data-section="stock">
                 <span class="icon">📦</span> Stock
             </a>
@@ -151,6 +154,17 @@
             </div>
         </section>
 
+        <!-- Categories Section -->
+        <section id="categories" class="content-section">
+            <div class="section-header">
+                <h2>📂 Gestion des Catégories</h2>
+                <p>Définissez l'ordre d'affichage et la visibilité des catégories</p>
+            </div>
+            <div id="categories-table" class="table-container">
+                <!-- Rempli via JavaScript -->
+            </div>
+        </section>
+
         <!-- Reviews Section (Avis Clients) -->
         <section id="reviews" class="content-section">
             <div class="section-header">
@@ -259,8 +273,15 @@
                     <textarea id="product-description" rows="3"></textarea>
                 </div>
                 <div class="form-group">
-                    <label>URL Image</label>
-                    <input type="text" id="product-image">
+                    <label>Image</label>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <button type="button" class="btn-secondary" id="btn-upload-image" style="flex: 1; padding: 8px; cursor: pointer;">📤 Upload Image</button>
+                        <input type="text" id="product-image" placeholder="Ou collez une URL..." style="flex: 1;">
+                    </div>
+                    <input type="file" id="product-image-file" accept="image/*" style="display: none;">
+                    <div id="image-preview" style="margin-top: 10px; text-align: center;">
+                        <img id="preview-img" src="" alt="Aperçu" style="max-width: 200px; max-height: 200px; display: none; border-radius: 8px;">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>

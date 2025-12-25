@@ -2,7 +2,7 @@
 const API_BASE_URL = 'http://localhost:5001/api';
 let currentUser = null;
 let cart = JSON.parse(localStorage.getItem('cart')) || [];
-let allProducts = [];
+let allProducts = [];   
 
 // Produits de démonstration
 const DEMO_PRODUCTS = [
@@ -33,10 +33,37 @@ const DEMO_PRODUCTS = [
 // ===========================
 
 document.addEventListener('DOMContentLoaded', () => {
+    loadCategories();
     loadProducts();
     setupEventListeners();
     updateCartUI();
 });
+
+// ===========================
+// CHARGEMENT DES CATÉGORIES
+// ===========================
+
+let allCategories = [];
+
+async function loadCategories() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/categories/`);
+        if (response.ok) {
+            allCategories = await response.json();
+            // Trier par display_order
+            allCategories.sort((a, b) => a.display_order - b.display_order);
+        }
+    } catch (error) {
+        console.warn('Impossible de charger les catégories depuis l\'API');
+        // Fallback aux catégories par défaut
+        allCategories = [
+            { name: 'classique', display_order: 1, is_visible: true },
+            { name: 'gourmand', display_order: 2, is_visible: true },
+            { name: 'sain', display_order: 3, is_visible: true },
+            { name: 'special', display_order: 4, is_visible: true }
+        ];
+    }
+}
 
 // ===========================
 // GÉNÉRATION DES IMAGES SVG
@@ -107,6 +134,15 @@ async function loadProducts() {
                     topping: demoProduct?.topping || 'default',
                     image: demoProduct?.image || 'images/bouledn.png'
                 };
+            });
+            
+            // Trier par display_order et vedettes en premier
+            allProducts.sort((a, b) => {
+                // Les vedettes en premier
+                if (a.is_featured && !b.is_featured) return -1;
+                if (!a.is_featured && b.is_featured) return 1;
+                // Puis par ordre d'affichage
+                return (a.display_order || 999) - (b.display_order || 999);
             });
         } else {
             // Fallback aux produits démo si BD vide

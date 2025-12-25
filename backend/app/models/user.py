@@ -37,5 +37,6 @@ class User(db.Model):
             'address': self.address,
             'city': self.city,
             'postal_code': self.postal_code,
-            'is_admin': self.is_admin
+            'is_admin': self.is_admin,
+            'created_at': self.created_at.isoformat() if self.created_at else None
         }
