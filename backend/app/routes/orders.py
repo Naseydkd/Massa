@@ -3,6 +3,7 @@ from app import db
 from app.models import Order, OrderItem, Product
 from app.models.settings import Settings
 from app.utils.email_service import send_order_notification
+from sqlalchemy.orm import joinedload
 
 orders_bp = Blueprint('orders', __name__, url_prefix='/api/orders')
 
@@ -65,14 +66,14 @@ def create_order():
 @orders_bp.route('/user/<int:user_id>', methods=['GET'])
 def get_user_orders(user_id):
     """Récupérer toutes les commandes d'un utilisateur"""
-    orders = Order.query.filter_by(user_id=user_id).all()
+    orders = Order.query.options(joinedload(Order.user)).filter_by(user_id=user_id).all()
     
     return jsonify([o.to_dict() for o in orders]), 200
 
 @orders_bp.route('/<int:order_id>', methods=['GET'])
 def get_order(order_id):
     """Récupérer une commande"""
-    order = Order.query.get(order_id)
+    order = Order.query.options(joinedload(Order.user)).get(order_id)
     
     if not order:
         return jsonify({'error': 'Commande non trouvée'}), 404
@@ -99,7 +100,7 @@ def update_order(order_id):
 @orders_bp.route('/', methods=['GET'])
 def get_all_orders():
     """Récupérer toutes les commandes (admin)"""
-    orders = Order.query.all()
+    orders = Order.query.options(joinedload(Order.user)).all()
     
     return jsonify([o.to_dict() for o in orders]), 200
 

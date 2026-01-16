@@ -16,9 +16,19 @@ class Order(db.Model):
     items = db.relationship('OrderItem', backref='order', lazy=True, cascade='all, delete-orphan')
     
     def to_dict(self):
+        user_info = {}
+        if self.user:
+            user_info = {
+                'first_name': self.user.first_name,
+                'last_name': self.user.last_name,
+                'phone': self.user.phone,
+                'email': self.user.email
+            }
+        
         return {
             'id': self.id,
             'user_id': self.user_id,
+            'user_info': user_info,
             'order_date': self.order_date.isoformat() if self.order_date else None,
             'created_at': self.order_date.isoformat() if self.order_date else None,
             'status': self.status,

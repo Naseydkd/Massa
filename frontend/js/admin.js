@@ -24,7 +24,8 @@ document.addEventListener('DOMContentLoaded', () => {
 function checkAdminAuth() {
     const savedAdmin = localStorage.getItem('currentAdmin');
     if (!savedAdmin) {
-        window.location.href = 'index.html';
+        // Rediriger vers la page de connexion admin si pas connecté
+        window.location.href = 'admin-auth.html';
         return;
     }
     currentAdmin = JSON.parse(savedAdmin);
@@ -71,20 +72,30 @@ function updateDashboard() {
     document.getElementById('stat-users').textContent = allUsers.length;
     document.getElementById('stat-products').textContent = allProducts.length;
 
-    // Revenu total
-    const totalRevenue = allOrders.reduce((sum, order) => sum + (order.total_price || 0), 0);
+    // Revenu total (uniquement les commandes livrées)
+    const totalRevenue = allOrders
+        .filter(order => order.status === 'delivered')
+        .reduce((sum, order) => sum + (order.total_price || 0), 0);
     document.getElementById('stat-revenue').textContent = totalRevenue.toFixed(0) + ' FCFA';
     
     // Dernières commandes
     const recentOrders = allOrders.slice(-5).reverse();
-    const recentOrdersHtml = recentOrders.map(order => `
+    const recentOrdersHtml = recentOrders.map(order => {
+        const userInfo = order.user_info || {};
+        const clientName = userInfo.first_name && userInfo.last_name 
+            ? `${userInfo.first_name} ${userInfo.last_name}` 
+            : `Client #${order.user_id}`;
+        const phone = userInfo.phone ? ` | Tél: ${userInfo.phone}` : '';
+        
+        return `
         <div class="list-item">
             <div class="list-item-title">Commande #${order.id}</div>
             <div class="list-item-info">
-                Client: ${order.user_id} | Total: ${order.total_price || 0} FCFA | Statut: ${order.status}
+                ${clientName}${phone} | Total: ${order.total_price || 0} FCFA | Statut: ${order.status}
             </div>
         </div>
-    `).join('');
+        `;
+    }).join('');
     document.getElementById('recent-orders').innerHTML = recentOrdersHtml;
 
     // Produits populaires (plus vendus)
@@ -126,6 +137,7 @@ function displayOrders(filteredOrders = null) {
                 <tr>
                     <th>ID</th>
                     <th>Client</th>
+                    <th>Téléphone</th>
                     <th>Total</th>
                     <th>Statut</th>
                     <th>Date</th>
@@ -133,10 +145,18 @@ function displayOrders(filteredOrders = null) {
                 </tr>
             </thead>
             <tbody>
-                ${orders.map(order => `
+                ${orders.map(order => {
+                    const userInfo = order.user_info || {};
+                    const clientName = userInfo.first_name && userInfo.last_name 
+                        ? `${userInfo.first_name} ${userInfo.last_name}` 
+                        : `Client #${order.user_id}`;
+                    const phone = userInfo.phone || 'N/A';
+                    
+                    return `
                     <tr>
                         <td>#${order.id}</td>
-                        <td>${order.user_id}</td>
+                        <td>${clientName}</td>
+                        <td>${phone}</td>
                         <td>${order.total_price || 0} FCFA</td>
                         <td><span class="status-badge status-${order.status || 'pending'}">${order.status || 'En attente'}</span></td>
                         <td>${new Date(order.created_at).toLocaleDateString('fr-FR')}</td>
@@ -145,7 +165,8 @@ function displayOrders(filteredOrders = null) {
                             <button class="btn-sm btn-delete" onclick="deleteOrder(${order.id})">Supprimer</button>
                         </td>
                     </tr>
-                `).join('')}
+                    `;
+                }).join('')}
             </tbody>
         </table>
     `;
@@ -370,12 +391,25 @@ function editOrder(orderId) {
     document.getElementById('order-id').value = order.id;
     document.getElementById('order-status').value = order.status || 'pending';
 
+    const userInfo = order.user_info || {};
+    const clientName = userInfo.first_name && userInfo.last_name 
+        ? `${userInfo.first_name} ${userInfo.last_name}` 
+        : `Client #${order.user_id}`;
+    const phone = userInfo.phone || 'Non renseigné';
+    const email = userInfo.email || 'Non renseigné';
+
     const detailsHtml = `
         <div class="order-detail-row">
             <strong>ID Commande:</strong> <span>#${order.id}</span>
         </div>
         <div class="order-detail-row">
-            <strong>Client:</strong> <span>ID ${order.user_id}</span>
+            <strong>Client:</strong> <span>${clientName}</span>
+        </div>
+        <div class="order-detail-row">
+            <strong>Téléphone:</strong> <span>${phone}</span>
+        </div>
+        <div class="order-detail-row">
+            <strong>Email:</strong> <span>${email}</span>
         </div>
         <div class="order-detail-row">
             <strong>Montant:</strong> <span>${order.total_price || 0} FCFA</span>
@@ -1075,8 +1109,20 @@ async function deleteReview(reviewId) {
 // ===========================
 
 function logout() {
-    localStorage.removeItem('currentAdmin');
-    window.location.href = 'index.html';
+    // Demander confirmation avant déconnexion
+    if (confirm('🔐 Êtes-vous sûr de vouloir vous déconnecter ?')) {
+        // Supprimer les données admin du localStorage
+        localStorage.removeItem('currentAdmin');
+        localStorage.removeItem('adminToken');
+        
+        // Afficher un message de déconnexion
+        console.log('👋 Déconnexion admin réussie - Redirection vers admin-auth.html');
+        
+        // Petit délai pour l'UX puis redirection
+        setTimeout(() => {
+            window.location.href = 'admin-auth.html';
+        }, 100);
+    }
 }
 
 // ===========================

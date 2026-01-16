@@ -3,24 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chez Hadjo - Vente en Ligne</title>
+    <title>Boule de neige  - Vente en Ligne</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
     <!-- Navigation -->
     <nav class="navbar">
         <div class="container">
-            <div class="navbar-brand">👩🏾‍🍳 Chez Hadjo's</div>
+            <div class="navbar-brand">
+                <span class="brand-icon">👩🏾‍🍳</span>
+                <span class="brand-text">Massa </span>    
+                <span class="brand-subtitle"></span>
+            </div>
+            
             <button class="hamburger" id="hamburger">
-                <span></span>
-                <span></span>
-                <span></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
+                <span class="hamburger-line"></span>
             </button>
+            
             <div class="navbar-menu" id="navbar-menu">
-                <a href="#accueil" class="nav-link">Accueil</a>
-                <a href="#catalogue" class="nav-link">Catalogue</a>
-                <a href="#" class="nav-link" id="btn-panier">Panier (<span id="cart-count">0</span>)</a>
-                <button id="btn-login" class="btn-login">Connexion</button>
+                <div class="nav-links">
+                    <a href="#accueil" class="nav-link">
+                        <span class="nav-icon"></span>
+                        <span class="nav-text">Accueil</span>
+                    </a>
+                    <a href="#catalogue" class="nav-link">
+                        <span class="nav-icon"></span>
+                        <span class="nav-text">Catalogue</span>
+                    </a>
+                    <a href="#avis" class="nav-link">
+                        <span class="nav-icon"></span>
+                        <span class="nav-text">Avis</span>
+                    </a>
+                </div>
+                
+                <div class="nav-actions">
+                    <button class="nav-cart" id="btn-panier">
+                        <span class="cart-icon">🛒</span>
+                        <span class="cart-text">Panier</span>
+                        <span class="cart-badge" id="cart-count">0</span>
+                    </button>
+                    <button id="btn-login" class="btn-login">
+                        <span class="login-icon"></span>
+                        <span class="login-text">Connexion</span>
+                    </button>
+                </div>
             </div>
         </div>
     </nav>
@@ -37,24 +65,17 @@
     <!-- Catalogue -->
     <section id="catalogue" class="catalogue">
         <div class="container">
-            <h2>Notre catalogue</h2>
+            <h2>Nos Produits</h2>
             
-            <!-- Filtres en Slide -->
-            <div class="filtres-slide">
-                <button class="slide-nav prev" id="slide-prev">❮</button>
-                <div class="filtres-container">
-                    <div class="filtres">
-                        <button class="filtre-btn active" data-category="all">Tous</button>
-                        <button class="filtre-btn" data-category="classique">Classiques</button>
-                        <button class="filtre-btn" data-category="gourmand">Gourmands</button>
-                        <button class="filtre-btn" data-category="sain">Sains</button>
-                        <button class="filtre-btn" data-category="special">Spéciaux</button>
-                    </div>
-                </div>
-                <button class="slide-nav next" id="slide-next">❯</button>
+            <!-- Filtres simples -->
+            <div class="filtres">
+                <button class="filtre-btn active" data-category="all">Tous</button>
+                <button class="filtre-btn" data-category="classique">Classiques</button>
+                <button class="filtre-btn" data-category="gourmand">Gourmands</button>
+                <button class="filtre-btn" data-category="sain">Sains</button>
+                <button class="filtre-btn" data-category="special">Spéciaux</button>
             </div>
-
-            <!-- Grille de produits -->
+            
             <div id="products-grid" class="products-grid">
                 <!-- Rempli via JavaScript -->
             </div>
@@ -73,8 +94,8 @@
                 <h3>Total: <span id="cart-total"></span> FCFA</h3>
             </div>
             <div class="cart-actions">
-                <button class="btn-secondary" id="btn-continue-shopping">Continuer les achats</button>
-                <button class="btn-primary" id="btn-checkout">Procéder au paiement</button>
+                <button class="btn-secondary" id="btn-continue-shopping">Continuer mes achats</button>
+                <button class="btn-primary" id="btn-checkout">Finaliser ma commande</button>
             </div>
         </div>
     </div>
@@ -112,20 +133,96 @@
 
     <!-- Section Avis Clients -->
     <section id="avis" class="avis-section">
-        <div id="review-form">
-  <input type="text" id="name" placeholder="Votre nom">
-  <textarea id="comment" placeholder="Votre avis"></textarea>
-  <input type="number" id="rating" min="1" max="5">
-  <button onclick="submitReview(productId)">Envoyer</button>
-</div>
-
         <div class="container">
-            <h2>💬 Ce que nos clients disent</h2>
-            <div id="avis-container" class="avis-grid">
-                <!-- Avis chargés via JavaScript -->
+            <!-- Header avec statistiques -->
+            <div class="avis-header-section">
+                <h2>💬 Ce que nos clients disent</h2>
+                <div class="avis-stats">
+                    <div class="stat-item">
+                        <span class="stat-number" id="total-reviews-count">0</span>
+                        <span class="stat-label">Avis</span>
+                    </div>
+                    <div class="stat-item">
+                        <div class="rating-display">
+                            <span class="rating-stars" id="average-stars">★★★★★</span>
+                            <span class="rating-number" id="average-rating-display">0.0</span>
+                        </div>
+                        <span class="stat-label">Note moyenne</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contrôles du slider -->
+            <div class="avis-controls">
+               <!-- <div class="slider-info-continuous">
+                    <span class="continuous-label">🔄 Défilement continu</span>
+                    <span class="pause-hint">Survolez pour mettre en pause</span>
+                </div>-->
+                <button id="btn-add-review" class="btn-primary">✍️ Laisser un avis</button>
+            </div>
+
+            <!-- Slider des avis -->
+            <div class="reviews-slider-container">
+                <div id="reviews-slider" class="reviews-slider">
+                    <!-- Avis chargés via JavaScript -->
+                </div>
+                <div class="slider-dots" id="slider-dots">
+                    <!-- Points de navigation -->
+                </div>
+            </div>
+
+            <!-- Message si pas d'avis -->
+            <div id="no-reviews" class="no-reviews" style="display: none;">
+                <div class="no-reviews-icon">💭</div>
+                <h3>Aucun avis pour le moment</h3>
+                <p>Soyez le premier à partager votre expérience !</p>
+                <button class="btn-primary" onclick="document.getElementById('btn-add-review').click()">
+                    Laisser le premier avis
+                </button>
             </div>
         </div>
     </section>
+
+    <!-- Modal pour ajouter un avis -->
+    <div id="modal-review" class="modal">
+        <div class="modal-content modal-form">
+            <span class="close">&times;</span>
+            <h2>✍️ Laisser un avis</h2>
+            <form id="form-review">
+                <div class="form-group">
+                    <label>Produit</label>
+                    <select id="review-product" required>
+                        <option value="">Sélectionnez un produit</option>
+                        <!-- Rempli via JavaScript -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Votre nom</label>
+                    <input type="text" id="review-name" placeholder="Votre nom" required>
+                </div>
+                <div class="form-group">
+                    <label>Note</label>
+                    <div class="rating-input">
+                        <input type="radio" name="rating" value="1" id="star1">
+                        <label for="star1">★</label>
+                        <input type="radio" name="rating" value="2" id="star2">
+                        <label for="star2">★</label>
+                        <input type="radio" name="rating" value="3" id="star3">
+                        <label for="star3">★</label>
+                        <input type="radio" name="rating" value="4" id="star4">
+                        <label for="star4">★</label>
+                        <input type="radio" name="rating" value="5" id="star5">
+                        <label for="star5">★</label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Votre avis</label>
+                    <textarea id="review-comment" placeholder="Partagez votre expérience..." rows="4" required></textarea>
+                </div>
+                <button type="submit" class="btn-primary">Publier l'avis</button>
+            </form>
+        </div>
+    </div>
 
     <!-- Modal Checkout -->
     <div id="modal-checkout" class="modal">
