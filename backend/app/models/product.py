@@ -1,6 +1,5 @@
 from app import db
 from datetime import datetime
-from sqlalchemy.dialects.mysql import LONGTEXT
 
 class Product(db.Model):
     __tablename__ = 'products'
@@ -10,7 +9,7 @@ class Product(db.Model):
     category = db.Column(db.String(50), nullable=False)  # 4 catégories
     description = db.Column(db.Text, nullable=True)
     price = db.Column(db.Float, nullable=False)
-    image_url = db.Column(LONGTEXT, nullable=True)  # Stocke URLs et images Base64
+    image_url = db.Column(db.Text, nullable=True)  # Stocke URLs et images Base64
     available = db.Column(db.Boolean, default=True)
     stock = db.Column(db.Integer, default=0)  # Quantité en stock
     display_order = db.Column(db.Integer, default=999)  # Ordre d'affichage

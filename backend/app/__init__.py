@@ -12,12 +12,15 @@ def create_app():
     app = Flask(__name__)
     CORS(app)
     
-    # Configuration MySQL
-    app.config['SQLALCHEMY_DATABASE_URI'] = (
-        f"mysql+pymysql://{os.getenv('DB_USER', 'root')}:"
+    # Configuration PostgreSQL (Supabase)
+    database_url = os.getenv('DATABASE_URL')
+    if database_url and database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url or (
+        f"postgresql://{os.getenv('DB_USER', 'postgres')}:"
         f"{os.getenv('DB_PASSWORD', '')}@"
         f"{os.getenv('DB_HOST', 'localhost')}/"
-        f"{os.getenv('DB_NAME', 'resto_donuts')}"
+        f"{os.getenv('DB_NAME', 'postgres')}"
     )
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
