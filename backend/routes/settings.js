@@ -22,11 +22,12 @@ router.put('/', async (req, res) => {
   try {
     const s = await getOrCreateSettings();
     const { opening_time=s.opening_time, closing_time=s.closing_time, is_open=s.is_open,
-            notify_email=s.notify_email, notify_on_order=s.notify_on_order } = req.body;
+            notify_email=s.notify_email, notify_on_order=s.notify_on_order,
+            ringtone_url=s.ringtone_url, ringtone_name=s.ringtone_name } = req.body;
     const { rows } = await db.query(
       `UPDATE settings SET opening_time=$1, closing_time=$2, is_open=$3,
-       notify_email=$4, notify_on_order=$5 WHERE id=$6 RETURNING *`,
-      [opening_time, closing_time, is_open, notify_email, notify_on_order, s.id]
+       notify_email=$4, notify_on_order=$5, ringtone_url=$6, ringtone_name=$7 WHERE id=$8 RETURNING *`,
+      [opening_time, closing_time, is_open, notify_email, notify_on_order, ringtone_url, ringtone_name, s.id]
     );
     res.json(rows[0]);
   } catch (e) { res.status(500).json({ error: e.message }); }

@@ -79,6 +79,8 @@ document.addEventListener('DOMContentLoaded', () => {
     loadDashboardData();
     setupEventListeners();
     setupNavigation();
+    setupBurgerMenu();
+    setupRingtone();
 });
 
 // ===========================
@@ -498,15 +500,17 @@ async function deleteOrder(orderId) {
             method: 'DELETE'
         });
 
+        const data = await response.json();
+
         if (response.ok) {
             showNotification('Commande supprimée', 'success');
             loadDashboardData();
         } else {
-            showNotification('Erreur lors de la suppression', 'error');
+            showNotification(`Erreur: ${data.error || response.status}`, 'error');
         }
     } catch (error) {
         console.error('Erreur:', error);
-        showNotification('Erreur lors de la suppression', 'error');
+        showNotification(`Erreur: ${error.message}`, 'error');
     }
 }
 
@@ -895,6 +899,17 @@ async function loadSettings() {
         document.getElementById('is-open').checked = settings.is_open;
         document.getElementById('notify-email').value = settings.notify_email || '';
         document.getElementById('notify-on-order').checked = settings.notify_on_order;
+
+        // Charger la sonnerie globale
+        if (settings.ringtone_url) {
+            globalRingtoneUrl = settings.ringtone_url;
+            const statusDiv = document.getElementById('ringtone-status');
+            if (statusDiv) {
+                const name = settings.ringtone_name || 'sonnerie personnalisée';
+                statusDiv.textContent = `✅ "${name}" active`;
+                statusDiv.style.color = '#4caf50';
+            }
+        }
     } catch (error) {
         console.error('Erreur:', error);
         showNotification('Erreur lors du chargement des paramètres', 'error');
@@ -1341,35 +1356,138 @@ async function createCategory(name) {
 
 let lastOrderCount = null;
 let orderPollingInterval = null;
+let audioCtx = null;
+
+// Initialiser l'AudioContext au premier clic (requis par les navigateurs)
+document.addEventListener('click', () => {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+}, { once: false });
 
 function playOrderSound() {
-    try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-
-        // Mélodie : 3 notes courtes montantes
-        const notes = [523, 659, 784]; // Do, Mi, Sol
-        notes.forEach((freq, i) => {
-            const oscillator = ctx.createOscillator();
-            const gainNode = ctx.createGain();
-
-            oscillator.connect(gainNode);
-            gainNode.connect(ctx.destination);
-
-            oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.18);
-
-            gainNode.gain.setValueAtTime(0, ctx.currentTime + i * 0.18);
-            gainNode.gain.linearRampToValueAtTime(0.4, ctx.currentTime + i * 0.18 + 0.02);
-            gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + i * 0.18 + 0.16);
-
-            oscillator.start(ctx.currentTime + i * 0.18);
-            oscillator.stop(ctx.currentTime + i * 0.18 + 0.18);
-        });
-    } catch (e) {
-        console.warn('Audio non disponible:', e);
+    if (globalRingtoneUrl) {
+        const audio = new Audio(globalRingtoneUrl);
+        audio.volume = 0.8;
+        audio.loop = true;
+        audio.play().catch(e => console.warn('Audio bloqué:', e));
+        setTimeout(() => { audio.pause(); audio.currentTime = 0; }, 10000);
+        return;
     }
+    _playNotesLoop();
 }
 
+function _generateBeepWav(freq, durationMs) {
+    const sampleRate = 44100;
+    const numSamples = Math.floor(sampleRate * durationMs / 1000);
+    const buffer = new ArrayBuffer(44 + numSamples * 2);
+    const view = new DataView(buffer);
+
+    // WAV header
+    const writeStr = (off, str) => { for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i)); };
+    writeStr(0, 'RIFF');
+    view.setUint32(4, 36 + numSamples * 2, true);
+    writeStr(8, 'WAVE');
+    writeStr(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeStr(36, 'data');
+    view.setUint32(40, numSamples * 2, true);
+
+    // Samples
+    for (let i = 0; i < numSamples; i++) {
+        const t = i / sampleRate;
+        const envelope = Math.min(1, t * 20) * Math.max(0, 1 - t * 3);
+        const sample = Math.sin(2 * Math.PI * freq * t) * envelope * 0.6;
+        view.setInt16(44 + i * 2, Math.max(-32767, Math.min(32767, sample * 32767)), true);
+    }
+
+    const blob = new Blob([buffer], { type: 'audio/wav' });
+    return URL.createObjectURL(blob);
+}
+
+function _playNotesLoop() {
+    // Alerte longue : bip continu qui monte et descend
+    const sampleRate = 44100;
+    const bipDur = 0.6;   // 600ms de son
+    const silDur = 0.2;   // 200ms de silence
+    const cycleDur = bipDur + silDur; // 800ms par cycle
+    const totalSamples = Math.floor(sampleRate * cycleDur);
+
+    const buffer = new ArrayBuffer(44 + totalSamples * 2);
+    const view = new DataView(buffer);
+
+    const writeStr = (off, str) => { for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i)); };
+    writeStr(0, 'RIFF');
+    view.setUint32(4, 36 + totalSamples * 2, true);
+    writeStr(8, 'WAVE');
+    writeStr(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, 1, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 2, true);
+    view.setUint16(32, 2, true);
+    view.setUint16(34, 16, true);
+    writeStr(36, 'data');
+    view.setUint32(40, totalSamples * 2, true);
+
+    const bipSamples = Math.floor(sampleRate * bipDur);
+    for (let i = 0; i < totalSamples; i++) {
+        let s = 0;
+        if (i < bipSamples) {
+            const t = i / sampleRate;
+            // Fréquence qui monte de 600Hz à 1200Hz sur la durée du bip
+            const freq = 600 + (600 * t / bipDur);
+            const env = Math.min(1, t * 20) * Math.max(0, 1 - (t - bipDur * 0.8) / (bipDur * 0.2));
+            s = Math.sin(2 * Math.PI * freq * t) * Math.max(0, env) * 0.7;
+        }
+        view.setInt16(44 + i * 2, Math.max(-32767, Math.min(32767, s * 32767)), true);
+    }
+
+    const blob = new Blob([buffer], { type: 'audio/wav' });
+    const url = URL.createObjectURL(blob);
+
+    const audio = new Audio(url);
+    audio.loop = true;
+    audio.volume = 0.8;
+    audio.play().catch(e => console.warn('Audio:', e));
+
+    setTimeout(() => {
+        audio.pause();
+        audio.currentTime = 0;
+        URL.revokeObjectURL(url);
+    }, 10000);
+}
+
+function _playNotes() {
+    const notes = [523, 659, 784]; // Do, Mi, Sol
+    notes.forEach((freq, i) => {
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime + i * 0.18);
+
+        gainNode.gain.setValueAtTime(0, audioCtx.currentTime + i * 0.18);
+        gainNode.gain.linearRampToValueAtTime(0.4, audioCtx.currentTime + i * 0.18 + 0.02);
+        gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + i * 0.18 + 0.16);
+
+        oscillator.start(audioCtx.currentTime + i * 0.18);
+        oscillator.stop(audioCtx.currentTime + i * 0.18 + 0.18);
+    });
+}
 async function checkNewOrders() {
     try {
         const res = await fetch(`${API_BASE_URL}/orders/`);
@@ -1421,3 +1539,110 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Arrêter le polling si l'onglet est fermé
 window.addEventListener('beforeunload', stopOrderPolling);
+
+// ===========================
+// SONNERIE PERSONNALISÉE
+// ===========================
+
+let globalRingtoneUrl = null; // chargée depuis les settings
+
+function setupRingtone() {
+    const fileInput = document.getElementById('ringtone-file');
+    const statusDiv = document.getElementById('ringtone-status');
+    const btnTest = document.getElementById('btn-test-ringtone');
+    const btnReset = document.getElementById('btn-reset-ringtone');
+
+    if (!fileInput) return;
+
+    function updateStatus() {
+        statusDiv.textContent = globalRingtoneUrl ? '✅ Sonnerie personnalisée active' : '🎵 Sonnerie par défaut (Do-Mi-Sol)';
+        statusDiv.style.color = globalRingtoneUrl ? '#4caf50' : '#999';
+    }
+    updateStatus();
+
+    // Upload et sauvegarde en DB
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (file.size > 2 * 1024 * 1024) {
+            statusDiv.textContent = '❌ Fichier trop volumineux (max 2MB)';
+            statusDiv.style.color = '#f44336';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+            const base64 = ev.target.result;
+            try {
+                const res = await fetch(`${API_BASE_URL}/settings/`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ringtone_url: base64, ringtone_name: file.name })
+                });
+                if (res.ok) {
+                    globalRingtoneUrl = base64;
+                    statusDiv.textContent = `✅ "${file.name}" enregistrée pour tous les admins`;
+                    statusDiv.style.color = '#4caf50';
+                } else {
+                    statusDiv.textContent = '❌ Erreur lors de la sauvegarde';
+                    statusDiv.style.color = '#f44336';
+                }
+            } catch (e) {
+                statusDiv.textContent = '❌ Erreur réseau';
+                statusDiv.style.color = '#f44336';
+            }
+        };        reader.readAsDataURL(file);
+    });
+
+    btnTest.addEventListener('click', () => playOrderSound());
+
+    btnReset.addEventListener('click', async () => {
+        try {
+            const res = await fetch(`${API_BASE_URL}/settings/`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ringtone_url: null })
+            });
+            if (res.ok) {
+                globalRingtoneUrl = null;
+                fileInput.value = '';
+                updateStatus();
+            }
+        } catch (e) {
+            showNotification('Erreur lors de la suppression', 'error');
+        }
+    });
+}
+
+// ===========================
+// MENU BURGER (mobile)
+// ===========================
+
+function setupBurgerMenu() {
+    const burger = document.getElementById('burger-btn');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    const closeBtn = document.getElementById('close-sidebar');
+
+    function openSidebar() {
+        sidebar.classList.add('open');
+        overlay.classList.add('active');
+    }
+
+    function closeSidebar() {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('active');
+    }
+
+    if (burger) burger.addEventListener('click', openSidebar);
+    if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+    if (overlay) overlay.addEventListener('click', closeSidebar);
+
+    // Fermer la sidebar quand on clique sur un item de nav (mobile)
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', () => {
+            if (window.innerWidth <= 768) closeSidebar();
+        });
+    });
+}
