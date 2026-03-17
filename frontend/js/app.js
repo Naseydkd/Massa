@@ -744,7 +744,7 @@ function updateAuthUI() {
             } else {
                 btnLogin.textContent = 'Connexion';
             }
-            btnLogin.onclick = () => openModal('modal-login');penModal('modal-login');
+            btnLogin.onclick = () => openModal('modal-login');
         }
     }
 }

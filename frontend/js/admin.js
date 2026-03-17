@@ -1334,3 +1334,90 @@ async function createCategory(name) {
         showNotification('Erreur lors de la création', 'error');
     }
 }
+
+// ===========================
+// SONNERIE NOUVELLE COMMANDE
+// ===========================
+
+let lastOrderCount = null;
+let orderPollingInterval = null;
+
+function playOrderSound() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+        // Mélodie : 3 notes courtes montantes
+        const notes = [523, 659, 784]; // Do, Mi, Sol
+        notes.forEach((freq, i) => {
+            const oscillator = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(ctx.destination);
+
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.18);
+
+            gainNode.gain.setValueAtTime(0, ctx.currentTime + i * 0.18);
+            gainNode.gain.linearRampToValueAtTime(0.4, ctx.currentTime + i * 0.18 + 0.02);
+            gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + i * 0.18 + 0.16);
+
+            oscillator.start(ctx.currentTime + i * 0.18);
+            oscillator.stop(ctx.currentTime + i * 0.18 + 0.18);
+        });
+    } catch (e) {
+        console.warn('Audio non disponible:', e);
+    }
+}
+
+async function checkNewOrders() {
+    try {
+        const res = await fetch(`${API_BASE_URL}/orders/`);
+        if (!res.ok) return;
+        const orders = await res.json();
+        const count = orders.length;
+
+        if (lastOrderCount === null) {
+            // Première vérification — on initialise sans sonner
+            lastOrderCount = count;
+            return;
+        }
+
+        if (count > lastOrderCount) {
+            const newCount = count - lastOrderCount;
+            lastOrderCount = count;
+            playOrderSound();
+            showNotification(`🛎️ ${newCount} nouvelle${newCount > 1 ? 's' : ''} commande${newCount > 1 ? 's' : ''} !`, 'success');
+            // Recharger les commandes dans le tableau
+            allOrders = orders;
+            displayOrders();
+            updateDashboard();
+        } else {
+            lastOrderCount = count;
+        }
+    } catch (e) {
+        // Silencieux — pas de spam d'erreurs réseau
+    }
+}
+
+function startOrderPolling() {
+    if (orderPollingInterval) return;
+    checkNewOrders(); // vérification immédiate
+    orderPollingInterval = setInterval(checkNewOrders, 5000); // toutes les 5s
+}
+
+function stopOrderPolling() {
+    if (orderPollingInterval) {
+        clearInterval(orderPollingInterval);
+        orderPollingInterval = null;
+    }
+}
+
+// Démarrer le polling quand la page est prête
+document.addEventListener('DOMContentLoaded', () => {
+    // Petit délai pour laisser loadDashboardData() s'exécuter en premier
+    setTimeout(startOrderPolling, 3000);
+});
+
+// Arrêter le polling si l'onglet est fermé
+window.addEventListener('beforeunload', stopOrderPolling);
