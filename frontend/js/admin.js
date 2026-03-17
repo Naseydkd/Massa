@@ -518,28 +518,42 @@ async function deleteOrder(orderId) {
 // GESTION DES IMAGES
 // ===========================
 
-function handleImageUpload(event) {
+async function handleImageUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    // Vérifier la taille (max 500KB)
-    const maxSize = 500 * 1024; // 500KB
-    if (file.size > maxSize) {
-        showNotification('Image trop volumineuse (max 500KB)', 'error');
-        return;
-    }
+    const preview = document.getElementById('preview-img');
+    const btnUpload = document.getElementById('btn-upload-image');
 
-    // Afficher aperçu
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        const preview = document.getElementById('preview-img');
-        preview.src = e.target.result;
-        preview.style.display = 'block';
-        
-        // Stocker l'URL en base64 dans le champ image
-        document.getElementById('product-image').value = e.target.result;
-    };
-    reader.readAsDataURL(file);
+    btnUpload.textContent = '⏳ Upload en cours...';
+    btnUpload.disabled = true;
+
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', 'boule-de-neige');
+
+        const res = await fetch('https://api.cloudinary.com/v1_1/dnx3uefmc/image/upload', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await res.json();
+
+        if (data.secure_url) {
+            document.getElementById('product-image').value = data.secure_url;
+            preview.src = data.secure_url;
+            preview.style.display = 'block';
+            showNotification('Image uploadée ✅', 'success');
+        } else {
+            showNotification('Erreur upload: ' + (data.error?.message || 'inconnu'), 'error');
+        }
+    } catch (e) {
+        showNotification('Erreur réseau lors de l\'upload', 'error');
+    } finally {
+        btnUpload.textContent = '📤 Upload Image';
+        btnUpload.disabled = false;
+    }
 }
 
 // ===========================
