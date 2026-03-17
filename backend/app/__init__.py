@@ -22,6 +22,7 @@ def create_app():
         f"{os.getenv('DB_HOST', 'localhost')}/"
         f"{os.getenv('DB_NAME', 'postgres')}"
     )
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {"connect_args": {"sslmode": "require"}}
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key')
     app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10MB max
