@@ -1,10 +1,74 @@
-// Admin Dashboard Configuration
-const API_BASE_URL = 'http://localhost:5001/api';
+// Configuration - fonctionne en local et en production
+const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:3000/api'
+  : '/api';
 let currentAdmin = null;
 let allOrders = [];
 let allProducts = [];
 let allUsers = [];
 let allCategories = [];
+
+// ===========================
+// AVIS CLIENTS
+// ===========================
+
+async function displayReviews() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/reviews/`);
+        const reviews = await response.json();
+
+        if (!reviews.length) {
+            document.getElementById('reviews-table').innerHTML = '<p style="padding:20px;color:#666;">Aucun avis pour le moment.</p>';
+            return;
+        }
+
+        const tableHtml = `
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Produit</th>
+                        <th>Utilisateur</th>
+                        <th>Note</th>
+                        <th>Commentaire</th>
+                        <th>Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${reviews.map(r => `
+                        <tr>
+                            <td>#${r.id}</td>
+                            <td>${r.product_name || '-'}</td>
+                            <td>${r.user_email || '-'}</td>
+                            <td>${'★'.repeat(r.rating)}${'☆'.repeat(5 - r.rating)}</td>
+                            <td>${r.comment || '-'}</td>
+                            <td>${r.created_at ? new Date(r.created_at).toLocaleDateString('fr-FR') : '-'}</td>
+                            <td><button class="btn-sm btn-delete" onclick="deleteReview(${r.id})">Supprimer</button></td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+        document.getElementById('reviews-table').innerHTML = tableHtml;
+    } catch (e) {
+        console.error('Erreur avis:', e);
+        document.getElementById('reviews-table').innerHTML = '<p style="padding:20px;color:red;">Erreur lors du chargement des avis.</p>';
+    }
+}
+
+async function deleteReview(reviewId) {
+    if (!confirm('Supprimer cet avis ?')) return;
+    try {
+        const res = await fetch(`${API_BASE_URL}/reviews/${reviewId}`, { method: 'DELETE' });
+        if (res.ok) {
+            showNotification('Avis supprimé ✅', 'success');
+            displayReviews();
+        }
+    } catch (e) {
+        showNotification('Erreur lors de la suppression', 'error');
+    }
+}
 
 // ===========================
 // INITIALISATION
@@ -502,14 +566,16 @@ function setupNavigation() {
                 orders: 'Gestion des Commandes',
                 products: 'Gestion des Produits',
                 categories: 'Gestion des Catégories',
-                users: 'Gestion des Utilisateurs'
+                users: 'Gestion des Utilisateurs',
+                reviews: 'Avis Clients',
+                stock: 'Gestion du Stock',
+                settings: 'Paramètres'
             };
-            document.getElementById('page-title').textContent = titles[sectionId];
+            document.getElementById('page-title').textContent = titles[sectionId] || sectionId;
             
             // Charger les données appropriées
-            if (sectionId === 'categories') {
-                loadCategories();
-            }
+            if (sectionId === 'categories') loadCategories();
+            if (sectionId === 'reviews') displayReviews();
         });
     });
 }

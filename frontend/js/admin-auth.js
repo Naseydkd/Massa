@@ -1,5 +1,7 @@
-// Configuration
-const API_BASE_URL = 'http://localhost:5001/api';
+// Configuration - fonctionne en local et en production
+const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:3000/api'
+  : '/api';
 
 // ===========================
 // INITIALISATION
@@ -212,47 +214,3 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// ===========================
-// FONCTION DE TEST POUR LA DÉMO
-// ===========================
-
-// Ajouter un bouton de test pour simuler une connexion rapide
-document.addEventListener('DOMContentLoaded', () => {
-    // Créer un bouton de test en mode développement
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        const testButton = document.createElement('button');
-        testButton.textContent = '🧪 Test Login (Demo)';
-        testButton.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #4CAF50;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 12px;
-            z-index: 9999;
-            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
-        `;
-        
-        testButton.addEventListener('click', () => {
-            // Simuler une connexion admin réussie
-            const testAdmin = {
-                id: 1,
-                email: 'admin@test.com',
-                username: 'admin_test'
-            };
-            
-            localStorage.setItem('currentAdmin', JSON.stringify(testAdmin));
-            showMessage('🎉 Connexion test réussie ! Redirection...', 'success');
-            
-            setTimeout(() => {
-                window.location.href = 'admin.html';
-            }, 1000);
-        });
-        
-        document.body.appendChild(testButton);
-    }
-});

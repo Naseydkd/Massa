@@ -3,35 +3,13 @@ window.addEventListener('error', (e) => {
     console.error('❌ Erreur JavaScript:', e.error);
 });
 
-// Configuration
-const API_BASE_URL = 'http://localhost:5001/api';
+// Configuration - fonctionne en local et en production
+const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:3000/api'
+  : '/api';
 let currentUser = null;
 let cart = JSON.parse(localStorage.getItem('cart')) || [];
-let allProducts = [];   
-
-// Produits de démonstration
-const DEMO_PRODUCTS = [
-    // Classiques
-    { id: 1, name: 'Donut Sucre', category: 'classique', description: 'Donut simple saupoudré de sucre blanc', price: 1500, image: 'images/bouledn.png', available: true },
-    { id: 2, name: 'Donut Chocolat', category: 'classique', description: 'Donut nature avec glaçage chocolat noir', price: 1000, image: 'images/donut-chocolat.png', available: true },
-    { id: 3, name: 'Donut Rose', category: 'classique', description: 'Donut avec glaçage rose sucré', price: 1000, image: 'images/donut-rose.png', available: true },
-    { id: 4, name: 'Donut Vanille', category: 'classique', description: 'Donut fourré à la vanille', price: 2500, image: 'images/donut-vanille.png', available: true },
-    // Gourmands
-    { id: 5, name: 'Donut Nutella', category: 'gourmand', description: 'Donut fourré aux noisettes Nutella', price: 1000, image: 'images/donut-nutella.png', available: true },
-    { id: 6, name: 'Donut Caramel Beurre Salé', category: 'gourmand', description: 'Donut avec caramel et fleur de sel', price: 1000, image: 'images/donut-caramel.png', available: true },
-    { id: 7, name: 'Donut Fraise Chantilly', category: 'gourmand', description: 'Donut garni de fraise fraîche et chantilly', price: 1000, image: 'images/donut-fraise.png', available: true },
-    { id: 8, name: 'Donut Cookies & Cream', category: 'gourmand', description: 'Donut avec morceaux de cookies et crème', price: 1000, image: 'images/donut-cookies.png', available: true },
-    // Sains
-    { id: 9, name: 'Donut Complet', category: 'sain', description: 'Donut aux céréales complètes', price: 1000, image: 'images/donut-complet.png', available: true },
-    { id: 10, name: 'Donut sans Sucre', category: 'sain', description: 'Donut sucré avec édulcorant naturel', price: 1000, image: 'images/donut-sansucre.png', available: true },
-    { id: 11, name: 'Donut Fruits Rouges', category: 'sain', description: 'Donut fourré aux fruits rouges', price: 1000, image: 'images/donut-fruits.png', available: true },
-    { id: 12, name: 'Donut Amande Miel', category: 'sain', description: 'Donut à base de farine d\'amande', price: 3000, image: 'images/donut-amande.png', available: true },
-    // Spéciaux
-    { id: 13, name: 'Donut Café', category: 'special', description: 'Donut au parfum café intense', price: 1000, image: 'images/donut-cafe.png', available: true },
-    { id: 14, name: 'Donut Pistache', category: 'special', description: 'Donut fourré à la pistache', price: 1000, image: 'images/donut-pistache.png', available: true },
-    { id: 15, name: 'Donut Matcha', category: 'special', description: 'Donut au thé matcha japonais', price: 1000, image: 'images/donut-matcha.png', available: true },
-    { id: 16, name: 'Donut Lavande Miel', category: 'special', description: 'Donut parfumé à la lavande avec miel', price: 1000, image: 'images/donut-lavande.png', available: true }
-];
+let allProducts = [];
 
 // ===========================
 // INITIALISATION
@@ -63,20 +41,12 @@ async function loadProducts() {
     try {
         const response = await fetch(`${API_BASE_URL}/products/`);
         if (!response.ok) throw new Error('API Error');
-        
         const data = await response.json();
-        
-        if (Array.isArray(data) && data.length > 0) {
-            allProducts = data;
-        } else {
-            allProducts = DEMO_PRODUCTS;
-        }
-        
+        allProducts = Array.isArray(data) && data.length > 0 ? data : [];
         displayProducts(allProducts);
     } catch (error) {
-        console.warn('❌ API indisponible, utilisation des produits démo');
-        allProducts = DEMO_PRODUCTS;
-        displayProducts(allProducts);
+        console.warn('❌ API indisponible');
+        displayProducts([]);
     }
 }
 
@@ -493,21 +463,12 @@ function setupModals() {
 async function loadReviews() {
     try {
         const response = await fetch(`${API_BASE_URL}/reviews/`);
-        if (!response.ok) {
-            throw new Error('API non disponible');
-        }
-        
+        if (!response.ok) throw new Error('API non disponible');
         const reviews = await response.json();
-        if (reviews && reviews.length > 0) {
-            displayReviewsSlider(reviews);
-            updateReviewsStats(reviews);
-        } else {
-            displayDemoReviews();
-        }
+        displayReviewsSlider(reviews);
+        updateReviewsStats(reviews);
     } catch (error) {
         console.error('Erreur lors de la récupération des avis:', error);
-        // Toujours afficher des avis de démonstration
-        displayDemoReviews();
     }
 }
 
@@ -602,63 +563,6 @@ function updateReviewsStats(reviews) {
     }
 }
 
-function displayDemoReviews() {
-    console.log('🎭 Affichage des avis de démonstration');
-    const demoReviews = [
-        {
-            id: 1,
-            rating: 5,
-            comment: "Absolument délicieux ! Les donuts sont frais et le goût est incroyable.",
-            product_name: "Donut Chocolat",
-            user_name: "Marie L.",
-            created_at: new Date().toISOString()
-        },
-        {
-            id: 2,
-            rating: 4,
-            comment: "Très bon service et produits de qualité. Je recommande !",
-            product_name: "Donut Vanille",
-            user_name: "Pierre D.",
-            created_at: new Date(Date.now() - 86400000).toISOString()
-        },
-        {
-            id: 3,
-            rating: 5,
-            comment: "Les meilleurs donuts de la ville ! Livraison rapide en plus.",
-            product_name: "Donut Nutella",
-            user_name: "Sophie M.",
-            created_at: new Date(Date.now() - 172800000).toISOString()
-        },
-        {
-            id: 4,
-            rating: 4,
-            comment: "Parfait pour le petit-déjeuner. Texture moelleuse et goût authentique.",
-            product_name: "Donut Caramel",
-            user_name: "Ahmed K.",
-            created_at: new Date(Date.now() - 259200000).toISOString()
-        },
-        {
-            id: 5,
-            rating: 5,
-            comment: "Une découverte fantastique ! Je vais commander régulièrement.",
-            product_name: "Donut Fraise",
-            user_name: "Lucie R.",
-            created_at: new Date(Date.now() - 345600000).toISOString()
-        },
-        {
-            id: 6,
-            rating: 4,
-            comment: "Très satisfait de ma commande. Donuts savoureux et bien présentés.",
-            product_name: "Donut Pistache",
-            user_name: "Thomas B.",
-            created_at: new Date(Date.now() - 432000000).toISOString()
-        }
-    ];
-    
-    console.log('Avis de démo créés:', demoReviews.length);
-    displayReviewsSlider(demoReviews);
-    updateReviewsStats(demoReviews);
-}
 
 // Fonction pour soumettre un avis
 async function submitReview(productId, name, rating, comment) {
@@ -668,7 +572,8 @@ async function submitReview(productId, name, rating, comment) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 product_id: productId,
-                user_name: name,
+                user_id: currentUser ? currentUser.id : null,
+                user_name: currentUser ? currentUser.username : (name || 'Anonyme'),
                 rating: rating,
                 comment: comment
             })
@@ -919,7 +824,10 @@ function setupForms() {
         formSignup.addEventListener('submit', (e) => {
             e.preventDefault();
             const inputs = e.target.querySelectorAll('input');
-            signup(inputs[0].value, inputs[1].value, inputs[2].value, inputs[3].value, inputs[4].value, inputs[5].value);
+            const firstName = document.getElementById('signup-firstname')?.value || inputs[3]?.value;
+            const lastName = document.getElementById('signup-lastname')?.value || inputs[4]?.value;
+            const phone = document.getElementById('signup-phone')?.value || inputs[5]?.value;
+            signup(inputs[0].value, inputs[1].value, inputs[2].value, firstName, lastName, phone);
         });
         console.log('✅ Formulaire d\'inscription configuré');
     }

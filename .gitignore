@@ -39,7 +39,7 @@ wheels/
 .DS_Store
 Thumbs.db
 
-# Node (if using npm/yarn)
+# Node
 node_modules/
 package-lock.json
 yarn.lock
